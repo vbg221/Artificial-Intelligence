@@ -67,6 +67,9 @@ class BFSAgent(Agent):
     # GetAction Function: Called with every frame
     def getAction(self, state):
     # TODO: write DFS Algorithm instead of returning Directions.STOP
+        '''
+        Declaring and Initializing primary variables and data structures.
+        '''
         node_stack = []
         leaf_nodes = []
         nodes = {}
@@ -74,6 +77,9 @@ class BFSAgent(Agent):
         nodes["action"] = None
         nodes["ancestor"] = None
     
+        '''
+        Getting root state and legal actions and successor based on it.
+        '''
         legal = state.getLegalPacmanActions()
         random.shuffle(legal)
         successor = [(state.generatePacmanSuccessor(action),action) for action in legal]
@@ -85,6 +91,9 @@ class BFSAgent(Agent):
             temp_nodes["ancestor"] = nodes
             node_stack.append(temp_nodes)
 
+        '''
+        Loop that iterates through the list as Queue finds path using BFS.
+        '''
         while node_stack:        
             current_node = node_stack.pop(0)
             i_state = current_node["state"]
@@ -108,6 +117,9 @@ class BFSAgent(Agent):
                         temp_nodes["ancestor"] = nodes
                         leaf_nodes.append(temp_nodes)
 
+        '''
+        Returns the action with highest score.
+        '''
         max_score = float("-inf")
         if leaf_nodes is not None:
             for j in leaf_nodes:
@@ -125,15 +137,20 @@ class DFSAgent(Agent):
     # GetAction Function: Called with every frame
     def getAction(self, state):
     # TODO: write DFS Algorithm instead of returning Directions.STOP    
+        '''
+        Declaring and Initializing primary variables and data structures.
+        '''
         node_stack = []
         leaf_nodes = []
         nodes = {}
         nodes["state"] = state
         nodes["action"] = None
         nodes["ancestor"] = None
-    
+
+        '''
+        Getting root state and legal actions and successor based on it.
+        '''    
         legal = state.getLegalPacmanActions()
-        random.shuffle(legal)
         successor = [(state.generatePacmanSuccessor(action),action) for action in legal]
         
         for element in successor:
@@ -143,6 +160,9 @@ class DFSAgent(Agent):
             temp_nodes["ancestor"] = nodes
             node_stack.append(temp_nodes)
 
+        '''
+        Loop that iterates through the list as Queue finds path using DFS.
+        '''
         while node_stack:        
             current_node = node_stack.pop()
             i_state = current_node["state"]
@@ -166,6 +186,11 @@ class DFSAgent(Agent):
                         temp_nodes["ancestor"] = nodes
                         node_stack.append(temp_nodes)
 
+        '''
+        Returns the action with highest score.
+        '''
+        node_t = max(leaf_nodes, key=lambda p : scoreEvaluation(p["state"]))
+        return node_t["action"]
         max_score = float("-inf")
         if leaf_nodes is not None:
             for j in leaf_nodes:
@@ -184,16 +209,22 @@ class AStarAgent(Agent):
     # GetAction Function: Called with every frame
     def getAction(self, state):
         # TODO: write A* Algorithm instead of returning Directions.STOP
+        '''
+        Declaring and Initializing primary variables and data structures.
+        '''
         node_stack = []
         leaf_nodes = []
         nodes = {}
         nodes["state"] = state
         nodes["action"] = None
         nodes["ancestor"] = None
-        nodes["depth"] = None
+        nodes["g(x)"] = None
         nodes["h(x)"] = None
         nodes["total_cost"] = None
         
+        '''
+        Getting root state and legal actions and successor based on it.
+        '''
         original_state = state
         legal = state.getLegalPacmanActions()
         successor = [(state.generatePacmanSuccessor(action),action) for action in legal]
@@ -203,17 +234,19 @@ class AStarAgent(Agent):
             temp_nodes["state"] = element[0]
             temp_nodes["action"] = element[1]
             temp_nodes["ancestor"] = state
-            temp_nodes["depth"] = 1
+            temp_nodes["g(x)"] = 1
             temp_nodes["h(x)"] = scoreEvaluation(original_state) - scoreEvaluation(temp_nodes["state"])
-            temp_nodes["total_cost"] = temp_nodes["depth"] - temp_nodes["h(x)"]
+            temp_nodes["total_cost"] = temp_nodes["g(x)"] - temp_nodes["h(x)"]
             node_stack.append(temp_nodes)
 
+        '''
+        Loop that iterates through the list as Queue finds path using A*.
+        '''
         while node_stack:
             node_stack = sorted(node_stack, key=lambda k: k['total_cost'])
             current_node = node_stack.pop(0)
             i_state = current_node["state"]
             i_action = current_node["action"]
-            i_depth = current_node["depth"]               
             
             legal = i_state.getLegalPacmanActions()
             if legal:
@@ -230,11 +263,20 @@ class AStarAgent(Agent):
                         temp_nodes["state"] = successor_child[0]
                         temp_nodes["action"] = successor_child[1]
                         temp_nodes["ancestor"] = current_node
-                        temp_nodes["depth"] = current_node["depth"] + 1
+                        temp_nodes["g(x)"] = current_node["g(x)"] + 1
                         temp_nodes["h(x)"] = scoreEvaluation(original_state) - scoreEvaluation(successor_child[0])
-                        temp_nodes["total_cost"] = temp_nodes["depth"] + temp_nodes["h(x)"]
+                        temp_nodes["total_cost"] = temp_nodes["g(x)"] + temp_nodes["h(x)"]
                         node_stack.append(temp_nodes)
                         
+                        
+        
+        '''
+        Returns the action with highest score.
+        '''
+        node_t = max(leaf_nodes, key=lambda p : scoreEvaluation(p["state"]))
+        return node_t["action"]
+        print(node_t["action"])
+        '''
         max_score = float("-inf")
         final_action = None
         if leaf_nodes is not None:        
@@ -244,3 +286,4 @@ class AStarAgent(Agent):
                     max_score = current_score
                     final_action = j["action"]
             return final_action
+        '''
