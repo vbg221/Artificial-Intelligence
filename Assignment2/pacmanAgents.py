@@ -80,9 +80,14 @@ def climb(actionLists, state, flag):
     for i in range(0,len(actionLists)):
         if tempFunState.isWin() + tempFunState.isLose() == 0:
             tempFunState = tempFunState.generatePacmanSuccessor(actionLists[i])
+            if tempFunState is None:
+                flag = False
+                return 0, flag
         else:
             flag = False
             break
+    
+    """
     if (tempFunState is not None):
         score = scoreEvaluation(tempFunState) 
     elif tempFunState.isWin():
@@ -91,7 +96,8 @@ def climb(actionLists, state, flag):
         score = -3000
     else:
         score = 0
-    return score, flag
+    """
+    return scoreEvaluation(tempFunState), flag
 
 
 class HillClimberAgent(Agent):
@@ -129,37 +135,37 @@ class HillClimberAgent(Agent):
                 if random.randint(0,1) == 1:
                     self.actionList[i] = possible[random.randint(0, len(possible)-1)]
 
-            print("Current Actionlist : ", self.actionList)
+            #print("Current Actionlist : ", self.actionList)
 
 
             currentScore, flag = climb(self.actionList, state, flag)
 
 
-            print"Current Action of actionlist : ", self.actionList[0]
-            print"Score at the end of current sequence : ", currentScore
-            print
+            #print"Current Action of actionlist : ", self.actionList[0]
+            #print"Score at the end of current sequence : ", currentScore
+            #print
             
             if(finalScore <= currentScore):
                 finalScore = currentScore
                 finalAction = self.actionList[0]
 
 
-            print"Final action till now from all iterations : ", finalAction
-            print"Maximum score till now : ", finalScore
-            print"--------------------------------------------------"            
+            #print"Final action till now from all iterations : ", finalAction
+            #print"Maximum score till now : ", finalScore
+            #print"--------------------------------------------------"            
 
 
-            if (finalScore > currentScore) or flag == False :
+            if flag == False :
                 break
         
         legalActions = state.getLegalPacmanActions()
         if finalAction not in legalActions:
             finalAction = Directions.STOP
         
-        print"#######################################"
-        print"Chosen Action : ", finalAction
-        print"Score for chosen action : ", finalScore
-        print"#######################################"
+        #print"#######################################"
+        #print"Chosen Action : ", finalAction
+        #print"Score for chosen action : ", finalScore
+        #print"#######################################"
         
         
         return finalAction;
@@ -171,9 +177,11 @@ def evalFun(actionLists, state):
     for i in range(0,len(actionLists)):
         if tempFunState.isWin() + tempFunState.isLose() == 0:
             tempFunState = tempFunState.generatePacmanSuccessor(actionLists[i])
+            if tempFunState is None:
+                return 0, False
         else:
             break
-    return scoreEvaluation(tempFunState)
+    return scoreEvaluation(tempFunState), True
 
 
 def sortFun(actionLists, score):
@@ -190,7 +198,7 @@ def sortFun(actionLists, score):
     for i in range(0,8):
         sortedList[i]["rank"] = i+1
     #print sortedList
-    print"---------------------------"
+    #print"---------------------------"
     return sortedList
 
 #from random import uniform
@@ -222,15 +230,35 @@ def crossover(actions1, actions2):
 def mutate(child, state):
     possible = state.getAllPossibleActions()
     r1 = random.randint(0,4)
-    print"r1 : ",r1
+    #print"r1 : ",r1
     child["actions"][r1] = possible[random.randint(0, len(possible)-1)]
+
+def copyActions(children):
+    l1 = [[],[],[],[],[],[],[],[]]
+    #print children
+    for i in range(0,8):
+        tempList = children[i]["actions"]
+        
+        for j in range(0,5):
+            l1[i].append(tempList[j])
+    
+    print"After swapping : ",l1
+    return l1    
+
+def copyScores(children):
+    l1 = [float("-inf"), float("-inf"), float("-inf"), float("-inf"), float("-inf"), float("-inf"), float("-inf"), float("-inf")]
+
+    for i in range(0,8):
+        l1[i] = children[i]["score"]
+
+    return l1;
 
 class GeneticAgent(Agent):
     # Initialization Function: Called one time when the game starts
     def registerInitialState(self, state):
-        self.actionList = [[],[],[],[],[],[],[],[]];
+        self.actionList = [[],[],[],[],[],[],[],[]]
         self.childrenList = [[], []]
-        self.scores = [float("-inf"), float("-inf"), float("-inf"), float("-inf"), float("-inf"), float("-inf"), float("-inf"), float("-inf"), float("-inf"), float("-inf")]
+        self.scores = [float("-inf"), float("-inf"), float("-inf"), float("-inf"), float("-inf"), float("-inf"), float("-inf"), float("-inf")]
         for j in range(0,8):
             for i in range(0,5):
                 self.actionList[j].append(Directions.STOP)
@@ -243,51 +271,65 @@ class GeneticAgent(Agent):
     def getAction(self, state):
         # TODO: write Genetic Algorithm instead of returning Directions.STOP
         finalAction = Directions.STOP
-        
+        flag = True
         possible = state.getAllPossibleActions();
         for j in range(0,8):
             for i in range(0, len(self.actionList[j])):
                 self.actionList[j][i] = possible[random.randint(0, len(possible)-1)]
         #print self.actionList
         for i in range(0,8):
-            self.scores[i] = evalFun(self.actionList[i], state)
+            self.scores[i], flag = evalFun(self.actionList[i], state)
         #print self.scores
         
         
         children = []
-        
-        for i in range(0,4):
-            sortedList = sortFun(self.actionList, self.scores)
-            child1 = choiceWithProbability(sortedList)
-            child2 = choiceWithProbability(sortedList)
-            if random.random() <= 0.7:
-                child1["actions"], child2["actions"] = crossover(child1["actions"], child2["actions"])
-                   
-            #print"###########################################"
-            #print child1
-            #print child2
-            #print"###########################################"
-
-            children.append(child1)
-            children.append(child2)
-         
-        for i in range(0,8):
-            if random.random() <= 0.1:
-                mutate(children[i], state)
+        while flag:
+            for i in range(0,4):
+                sortedList = sortFun(self.actionList, self.scores)
+                child1 = choiceWithProbability(sortedList)
+                child2 = choiceWithProbability(sortedList)
+                if random.random() <= 0.7:
+                    child1["actions"], child2["actions"] = crossover(child1["actions"], child2["actions"])
+                       
+                #print"###########################################"
+                #print child1
+                #print child2
+                #print"###########################################"
+    
+                children.append(child1)
+                children.append(child2)
+             
+            for i in range(0,8):
+                if random.random() <= 0.1:
+                    mutate(children[i], state)
+                    
+                    
+            for i in range(0,8):
+                children[i]["score"], flag = evalFun(children[i]["actions"], state)
                 
+            #print self.actionList
+            #print self.scores
+            #print "------------------------------------------------------------"
+            print children
+            print "------------------------------------------------------------"
+            self.actionList = copyActions(children)
+            self.scores = copyScores(children)
+            #print self.actionList
+            #print self.scores
+            #print "############################################################"
+            if flag is True:
+                del(children)
+                children = []
                 
-        for i in range(0,8):
-            children[i]["score"] = evalFun(children[i]["actions"], state)
-            
         children.sort(key=lambda x:x["score"])
         finalActions = children[7]["actions"]
         finalAction = finalActions[0]
         #print children
 
-        print finalAction
+        #print finalAction
         print"%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"    
         return finalAction
-
+"""
 class MCTSAgent(Agent):
     # Initialization Function: Called one time when the game starts
     def registerInitialState(self, state):
@@ -297,3 +339,158 @@ class MCTSAgent(Agent):
     def getAction(self, state):
         # TODO: write MCTS Algorithm instead of returning Directions.STOP
         return Directions.STOP
+"""
+
+class MCTSAgent(Agent):
+    # Initialization Function: Called one time when the game starts
+    def registerInitialState(self, state):
+        return;
+
+    def getUCBScore(self, node, parent_state):
+        exploitation = normalizedScoreEvaluation(parent_state, node["state"])
+        c = 1
+        parent_node = node["parent"]
+        if node["number_of_visits"] == 0:
+            node["number_of_visits"] = 0.001
+        exploration = c * math.sqrt((math.log(parent_node["number_of_visits"])) / (node["number_of_visits"]))
+        UCB_Score = exploitation + exploration
+        #print UCB_Score
+        return UCB_Score
+
+    def DefaultPolicy(self, new_state):
+        for i in range(0, 10):
+            
+            if not new_state.isWin() + new_state.isLose() == 0:
+                return scoreEvaluation(new_state)
+            
+            else:
+                legal_actions = new_state.getLegalPacmanActions()
+                random_action = legal_actions[random.randint(0, len(legal_actions) - 1)];
+                new_state = new_state.generatePacmanSuccessor(random_action)
+        return scoreEvaluation(new_state)
+
+    expanded_list = []
+
+    def Expand(self, node):
+        state = node["state"]
+        legal_actions = state.getLegalPacmanActions()
+        # successors = [(state.generatePacmanSuccessor(action), action) for action in legal_actions]
+        current_action = None
+        #print legal_actions
+        if node is not None:
+            for action in node["child_action_list"]:
+                if action in legal_actions:
+                    legal_actions.remove(action)
+            
+        if not node["children"]:
+            #current_action = legal_actions[0]
+            current_action = legal_actions[random.randint(0,len(legal_actions)-1)]
+            
+            
+            #print "random_action"
+            #print current_action
+            new_state = state.generatePacmanSuccessor(current_action)
+            new_node = {}
+            new_node["parent"] = node
+            new_node["state"] = new_state
+            new_node["action"] = current_action
+            new_node["number_of_visits"] = 0
+            new_node["children"] = False
+            new_node["UCB_score"] = 999999
+            new_node["child_action_list"] = []
+            new_node["child_list"] = []
+
+            node["child_list"].append(new_node)
+            self.expanded_list.append(new_node)
+
+        node["child_action_list"].append(current_action)
+        if len(legal_actions) == 1:
+                node["children"] = True
+
+            
+
+        return new_node
+
+    def Select(self, node, c, root_state):
+        legal_actions = node["child_action_list"]
+        #print"befor loop in select"
+        for child_node in node["child_list"]:
+            child_node["UCB_score"] = self.getUCBScore(child_node, root_state)
+        
+        #print"after loop in select"
+        max = -999999
+        for child in node["child_list"]:
+            if child["UCB_score"] > max:
+                max = child["UCB_score"]
+                best_child = child
+                #print max
+
+        return best_child
+
+
+    def TreePolicy(self, node, root_state):
+        while node["state"].isWin() + node["state"].isLose() == 0:
+            if node["children"] == False:
+                #print"Before Expand"
+                return self.Expand(node)
+            else:
+                #print"before select function."
+                node = self.Select(node, 1, root_state)
+                #print"after select function."
+        return node
+
+
+    def Backup(self, node, delta):
+        while node is not None:
+            node["number_of_visits"] += 1
+            #node["total_score"] += 1
+            node = node["parent"]
+
+    # GetAction Function: Called with every frame
+    def getAction(self, state):
+        # TODO: write MCTS Algorithm instead of returning Directions.STOP
+        root_state = state
+        root_node = {}
+        root_node["parent"] = None
+        root_node["action"] = None
+        root_node["state"] = root_state
+        #root_node["total_score"] = 0
+        root_node["number_of_visits"] = 0
+        root_node["children"] = False
+        root_node["child_list"] = []
+        root_node["child_action_list"] = []
+        root_node["UCB_score"] = 999999
+
+
+        count_rollOuts = 0
+
+        node = root_node
+        state = root_state
+
+        while(count_rollOuts < 5):
+            new_node = self.TreePolicy(node, state)
+            #print"First Line executed."
+            delta = self.DefaultPolicy(new_node["state"])
+            #print"Second line executed."
+            count_rollOuts += 1
+            #print"rollouts executed."
+            self.Backup(new_node, delta)
+            #print"back propogation executed."
+            #print"rollout counts",count_rollOuts
+
+        
+        dictionary1=[]
+        action_list = node["child_action_list"]
+        child_list = node["child_list"]
+        for i in range(0, len(node["child_action_list"])):
+            #print i
+            temp = {}
+            temp["action"] = action_list[i]
+            t1 = child_list[i]
+            temp["visit_count"] = t1["number_of_visits"]
+            dictionary1.append(temp)
+        
+        dictionary1.sort(key=lambda x:x["visit_count"])
+        best = dictionary1[len(dictionary1)-1]
+        #print"##################################"
+        return best["action"]#Directions.STOP#action
