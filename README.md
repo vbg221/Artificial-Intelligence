@@ -3,7 +3,7 @@ This project is consist of multiple AI algorithms that are used by the PACMAN ga
 
 Note: I wrote the algorithms in Python (2.7.13) in the Pacman framework provided by University of California, Berkeley for educational purposes. This project was a part of acedemic exercise for my course Artificial Intelligence at New York University.
 
-# List of Algorithms used:
+## List of Algorithms used:
 I have used various Artificial Intelligence algorithms. Here is the full list of all the algorithms. 
 1. Depth First Search
 2. Bredth First Search
@@ -19,7 +19,18 @@ The algorithms implemented for classification are:
 3. Multi Layer Perceptron
 4. ID3 (Decision Tree)
 
-# Observations:
+## Usage Instructions:
+This program runs locally and requires python 2.7 (preferably 2.7.13). The algorithms I wrote are in the PacmanAgents.py file. Rest of the files are framework that provides and supports the game.
+
+To run the game, 
+1. Clone the repository to your local machine. 
+2. Run pacman.py from command line using
+```
+python pacman.py -p AgentName
+```
+AgentName can be replaced by specific agent i.e. DFSAgent, AStarAgent etc.
+
+## Observations:
 From the observations made by implementing these algorithms, I came to conclusion as below:
 1. DFS and BFS (limited depth controlled by restricting time taken for each move) perform poorly in comparison to all the algorithms.
 2. A star and Hill Climber gives fair accuracy by collecting more than half of the dots on the grid.
